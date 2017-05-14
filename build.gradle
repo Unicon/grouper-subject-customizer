@@ -1,0 +1,81 @@
+apply plugin: 'java'
+
+version = '1.0.0'
+group = 'net.unicon'
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile ('edu.internet2.middleware.grouper:grouper:2.3.0') {
+      transitive = false
+    }
+    compile 'edu.internet2.middleware.grouper:subject:2.3.0'
+    compile 'org.slf4j:slf4j-api:1.6.2'
+    //Needed for hooks to compile
+    compile 'org.hibernate:hibernate-core:3.6.0.Final'
+}
+
+task prepImageFiles() {
+    dependsOn jar
+
+    inputs.dir 'src/test/docker'
+    inputs.dir 'build/libs'
+
+    outputs.dir 'build/docker'
+
+    doLast {
+        copy {
+            from 'src/test/docker/'
+            into 'build/docker/'
+        }
+
+        copy {
+            from 'build/libs/'
+            into 'build/docker/grouper/lib/'
+        }
+    }
+}
+
+task buildImages(type:Exec) {
+    dependsOn prepImageFiles
+
+    doFirst {
+        logger.lifecycle("Building the initial images may take a long time. Have plenty of bandwidth.")
+    }
+
+    workingDir 'build/docker'
+    commandLine 'docker-compose', 'build'
+}
+
+task up(type:Exec) {
+    dependsOn buildImages
+
+    workingDir 'build/docker'
+    commandLine 'docker-compose', 'up', '-d'
+}
+
+task stop(type:Exec) {
+    workingDir 'build/docker'
+    commandLine 'docker-compose', 'kill'
+}
+
+task down(type:Exec) {
+    dependsOn stop
+
+    workingDir 'build/docker'
+    commandLine 'docker-compose', 'rm', '-f'
+}
+
+clean {
+    dependsOn down
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = 3.5
+}

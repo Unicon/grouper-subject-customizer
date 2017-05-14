@@ -1,0 +1,12 @@
+version: "2"
+
+services:
+  grouper:
+    build: ./grouper/
+    environment:
+     - disable=DAEMON,WS
+    ports:
+     - 8080:8080
+     - 3306:3306
+     - 8000:8000
+
